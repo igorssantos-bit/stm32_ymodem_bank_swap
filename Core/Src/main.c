@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define FLASH_BANK2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,6 +46,7 @@
 
 COM_InitTypeDef BspCOMInit;
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
+FLASH_OBProgramInitTypeDef OBInit;
 
 /* USER CODE BEGIN PV */
 
@@ -125,22 +126,57 @@ int main(void)
   /* -- Sample board code to switch on led ---- */
   BSP_LED_On(LED_GREEN);
 
+  /* Unlock the User Flash area */
+  HAL_FLASH_Unlock();
+
+  HAL_FLASH_OB_Unlock();
+
   /* USER CODE END BSP */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* Wait for BUTTON_USER is released */
+    if (BSP_PB_GetState(BUTTON_USER) == SET){
+    	while (BSP_PB_GetState(BUTTON_USER) == SET);
+    	/* Get the boot configuration status */
+    	HAL_FLASHEx_OBGetConfig(&OBInit);
+    	/* Check Swap Flash banks  status */
+    	if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE){
+    		/*Swap to bank2 */
+    		/*Set OB SWAP_BANK_OPT to swap Bank2*/
+    		OBInit.OptionType = OPTIONBYTE_USER;
+    		OBInit.USERType = OB_USER_SWAP_BANK;;
+    		OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
+    		HAL_FLASHEx_OBProgram(&OBInit);
 
-    /* -- Sample board code for User push-button in interrupt mode ---- */
-    if (BspButtonState == BUTTON_PRESSED)
-    {
-      /* Update button state */
-      BspButtonState = BUTTON_RELEASED;
-      /* -- Sample board code to toggle led ---- */
-      BSP_LED_Toggle(LED_GREEN);
+    		/* Launch Option bytes loading */
+    		HAL_FLASH_OB_Launch();
+    	}else{
+    		/* Swap to bank1 */
+    		/*Set OB SWAP_BANK_OPT to swap Bank1*/
+    		OBInit.OptionType = OPTIONBYTE_USER;
+    		OBInit.USERType = OB_USER_SWAP_BANK;
+    		OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
+    		HAL_FLASHEx_OBProgram(&OBInit);
 
-      /* ..... Perform your action ..... */
+    		/* Launch Option bytes loading */
+    		HAL_FLASH_OB_Launch();
+
+    	}
+    }else{
+#ifdef FLASH_BANK1
+    	/* Toggle LED */
+    	BSP_LED_Toggle(LED_GREEN);
+    	/* Insert 100 ms delay */
+    	HAL_Delay(100);
+#elif defined(FLASH_BANK2)
+    	/* Toggle LED */
+    	BSP_LED_Toggle(LED_GREEN);
+    	/* Insert 1000 ms delay */
+    	HAL_Delay(1000);
+#endif
     }
     /* USER CODE END WHILE */
 
