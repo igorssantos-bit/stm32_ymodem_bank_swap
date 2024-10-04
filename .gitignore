@@ -1,0 +1,14 @@
+/Debug/
+/.settings/
+*.o
+*.su
+*.log
+*.d
+*.eep
+*.elf
+*.hex
+*.map
+*.srec
+*.prefs
+*.xml
+*.launch
