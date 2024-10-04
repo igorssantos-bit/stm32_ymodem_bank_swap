@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define FLASH_BANK2
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -150,7 +150,6 @@ int main(void)
     		OBInit.USERType = OB_USER_SWAP_BANK;;
     		OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
     		HAL_FLASHEx_OBProgram(&OBInit);
-
     		/* Launch Option bytes loading */
     		HAL_FLASH_OB_Launch();
     	}else{
@@ -160,10 +159,8 @@ int main(void)
     		OBInit.USERType = OB_USER_SWAP_BANK;
     		OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
     		HAL_FLASHEx_OBProgram(&OBInit);
-
     		/* Launch Option bytes loading */
     		HAL_FLASH_OB_Launch();
-
     	}
     }else{
 #ifdef FLASH_BANK1

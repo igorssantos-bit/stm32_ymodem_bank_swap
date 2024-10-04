@@ -13,3 +13,7 @@
 *.prefs
 *.xml
 *.launch
+/Debug_Bank1/
+/Debug_Bank2/
+/Release_Bank1/
+/Release_Bank2/
