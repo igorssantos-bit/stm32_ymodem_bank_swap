@@ -50,5 +50,21 @@ void MX_FLASH_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
+/**
+ * @brief  Gets the page of a given address
+ * @param  Addr: Address of the FLASH Memory
+ * @retval The page of a given address
+ */
+static uint32_t GetPage(uint32_t Addr){
+	uint32_t page = 0;
+	if (Addr < (FLASH_BASE + FLASH_BANK_SIZE)){
+		/* Bank 1 */
+		page = (Addr - FLASH_BASE) / FLASH_PAGE_SIZE;
+	}else{
+		/* Bank 2 */
+		page = (Addr - (FLASH_BASE + FLASH_BANK_SIZE)) / FLASH_PAGE_SIZE;
+	}
+	return page;
+}
 
 /* USER CODE END 1 */
