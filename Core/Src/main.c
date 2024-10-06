@@ -127,9 +127,7 @@ int main(void)
   BSP_LED_On(LED_GREEN);
 
   /* Unlock the User Flash area */
-  HAL_FLASH_Unlock();
 
-  HAL_FLASH_OB_Unlock();
 
   /* USER CODE END BSP */
 
@@ -140,6 +138,8 @@ int main(void)
     /* Wait for BUTTON_USER is released */
     if (BSP_PB_GetState(BUTTON_USER) == SET){
     	while (BSP_PB_GetState(BUTTON_USER) == SET);
+    	HAL_FLASH_Unlock();
+    	HAL_FLASH_OB_Unlock();
     	/* Get the boot configuration status */
     	HAL_FLASHEx_OBGetConfig(&OBInit);
     	/* Check Swap Flash banks  status */
@@ -162,6 +162,9 @@ int main(void)
     		/* Launch Option bytes loading */
     		HAL_FLASH_OB_Launch();
     	}
+    	HAL_FLASH_OB_Lock();
+    	HAL_FLASH_Lock();
+
     }else{
 #ifdef FLASH_BANK1
     	/* Toggle LED */
