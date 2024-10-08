@@ -24,6 +24,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "flash.h"
+#include "menu.h"
 
 /* USER CODE END Includes */
 
@@ -43,12 +45,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
 COM_InitTypeDef BspCOMInit;
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
 FLASH_OBProgramInitTypeDef OBInit;
 
 /* USER CODE BEGIN PV */
+extern pFunction JumpToApplication;
+extern uint32_t JumpAddress;
 
 /* USER CODE END PV */
 
@@ -119,15 +122,22 @@ int main(void)
   }
 
   /* USER CODE BEGIN BSP */
-
-  /* -- Sample board code to send message over COM1 port ---- */
-  printf("Welcome to STM32 world !\n\r");
-
-  /* -- Sample board code to switch on led ---- */
-  BSP_LED_On(LED_GREEN);
-
-  /* Unlock the User Flash area */
-
+  if (BSP_PB_GetState(BUTTON_USER) == SET){
+	  /* Initialise Flash */
+	  FLASH_Init();
+	  /* Display main menu */
+	  Main_Menu();
+  }else{
+	  /* Test if user code is programmed starting from address "APPLICATION_ADDRESS" */
+	  if (((*(__IO uint32_t*)APPLICATION_ADDRESS) & 0x2FFE0000 ) == 0x20000000) {
+		  /* Jump to user application */
+		  JumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
+		  JumpToApplication = (pFunction) JumpAddress;
+		  /* Initialize user application's Stack Pointer */
+		  __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
+		  JumpToApplication();
+	  }
+  }
 
   /* USER CODE END BSP */
 
@@ -135,49 +145,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* Wait for BUTTON_USER is released */
-    if (BSP_PB_GetState(BUTTON_USER) == SET){
-    	while (BSP_PB_GetState(BUTTON_USER) == SET);
-    	HAL_FLASH_Unlock();
-    	HAL_FLASH_OB_Unlock();
-    	/* Get the boot configuration status */
-    	HAL_FLASHEx_OBGetConfig(&OBInit);
-    	/* Check Swap Flash banks  status */
-    	if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE){
-    		/*Swap to bank2 */
-    		/*Set OB SWAP_BANK_OPT to swap Bank2*/
-    		OBInit.OptionType = OPTIONBYTE_USER;
-    		OBInit.USERType = OB_USER_SWAP_BANK;;
-    		OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
-    		HAL_FLASHEx_OBProgram(&OBInit);
-    		/* Launch Option bytes loading */
-    		HAL_FLASH_OB_Launch();
-    	}else{
-    		/* Swap to bank1 */
-    		/*Set OB SWAP_BANK_OPT to swap Bank1*/
-    		OBInit.OptionType = OPTIONBYTE_USER;
-    		OBInit.USERType = OB_USER_SWAP_BANK;
-    		OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
-    		HAL_FLASHEx_OBProgram(&OBInit);
-    		/* Launch Option bytes loading */
-    		HAL_FLASH_OB_Launch();
-    	}
-    	HAL_FLASH_OB_Lock();
-    	HAL_FLASH_Lock();
 
-    }else{
-#ifdef FLASH_BANK1
-    	/* Toggle LED */
-    	BSP_LED_Toggle(LED_GREEN);
-    	/* Insert 100 ms delay */
-    	HAL_Delay(100);
-#elif defined(FLASH_BANK2)
-    	/* Toggle LED */
-    	BSP_LED_Toggle(LED_GREEN);
-    	/* Insert 1000 ms delay */
-    	HAL_Delay(1000);
-#endif
-    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
