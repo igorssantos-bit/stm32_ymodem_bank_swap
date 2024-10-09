@@ -19,9 +19,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "flash.h"
-#include "icache.h"
 
 /* USER CODE BEGIN 0 */
+#include "icache.h"
 
 /* USER CODE END 0 */
 

@@ -45,9 +45,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
 COM_InitTypeDef BspCOMInit;
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
-FLASH_OBProgramInitTypeDef OBInit;
 
 /* USER CODE BEGIN PV */
 extern pFunction JumpToApplication;
@@ -122,7 +122,7 @@ int main(void)
   }
 
   /* USER CODE BEGIN BSP */
-  if (BSP_PB_GetState(BUTTON_USER) == SET){
+  if (BSP_PB_GetState(BUTTON_USER) == RESET){
 	  /* Initialise Flash */
 	  FLASH_Init();
 	  /* Display main menu */
