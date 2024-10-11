@@ -114,16 +114,16 @@ void Main_Menu(void) {
 	Serial_PutString((uint8_t *)"\r\n\r\n");
 	while (1) {
 		/* Test if any sector of Flash memory where user application will be loaded is write protected */
-		FlashProtection = FLASH_GetWriteProtectionStatus();
+//		FlashProtection = FLASH_GetWriteProtectionStatus();
 		Serial_PutString((uint8_t *)"\r\n=================== Main Menu ============================\r\n\n");
 		Serial_PutString((uint8_t *)"  Download image to the internal Flash ----------------- 1\r\n\n");
-		Serial_PutString((uint8_t *)"  Upload image from the internal Flash ----------------- 2\r\n\n");
+//		Serial_PutString((uint8_t *)"  Upload image from the internal Flash ----------------- 2\r\n\n");
 		Serial_PutString((uint8_t *)"  Execute the loaded application ----------------------- 3\r\n\n");
-		if(FlashProtection) {
-			Serial_PutString((uint8_t *)"  Disable the write protection ------------------------- 4\r\n\n");
-		} else {
-			Serial_PutString((uint8_t *)"  Enable the write protection -------------------------- 4\r\n\n");
-		}
+//		if(FlashProtection) {
+//			Serial_PutString((uint8_t *)"  Disable the write protection ------------------------- 4\r\n\n");
+//		} else {
+//			Serial_PutString((uint8_t *)"  Enable the write protection -------------------------- 4\r\n\n");
+//		}
 		Serial_PutString((uint8_t *)"==========================================================\r\n\n");
 		/* Clean the input path */
 		__HAL_UART_FLUSH_DRREGISTER(&hcom_uart[COM1]);
@@ -135,11 +135,11 @@ void Main_Menu(void) {
 			SerialDownload();
 		}
 		break;
-		case '2': {
-			/* Upload user application from the Flash */
-			SerialUpload();
-		}
-		break;
+//		case '2': {
+//			/* Upload user application from the Flash */
+//			SerialUpload();
+//		}
+//		break;
 		case '3': {
 			Serial_PutString((uint8_t *)"Start program execution......\r\n\n");
 			/* execute the new program */
@@ -151,25 +151,25 @@ void Main_Menu(void) {
 			JumpToApplication();
 		}
 		break;
-		case '4': {
-			if (FlashProtection) {
-				/* Disable the write protection */
-				if (FLASH_WriteProtectionConfig(DISABLE) == HAL_OK) {
-					Serial_PutString((uint8_t *)"Write Protection disabled...\r\n");
-					Serial_PutString((uint8_t *)"System will now restart...\r\n");
-				} else {
-					Serial_PutString((uint8_t *)"Error: Flash write un-protection failed...\r\n");
-				}
-			} else {
-				if (FLASH_WriteProtectionConfig(ENABLE) == HAL_OK) {
-					Serial_PutString((uint8_t *)"Write Protection enabled...\r\n");
-					Serial_PutString((uint8_t *)"System will now restart...\r\n");
-				} else {
-					Serial_PutString((uint8_t *)"Error: Flash write protection failed...\r\n");
-				}
-			}
-		}
-		break;
+//		case '4': {
+//			if (FlashProtection) {
+//				/* Disable the write protection */
+//				if (FLASH_WriteProtectionConfig(DISABLE) == HAL_OK) {
+//					Serial_PutString((uint8_t *)"Write Protection disabled...\r\n");
+//					Serial_PutString((uint8_t *)"System will now restart...\r\n");
+//				} else {
+//					Serial_PutString((uint8_t *)"Error: Flash write un-protection failed...\r\n");
+//				}
+//			} else {
+//				if (FLASH_WriteProtectionConfig(ENABLE) == HAL_OK) {
+//					Serial_PutString((uint8_t *)"Write Protection enabled...\r\n");
+//					Serial_PutString((uint8_t *)"System will now restart...\r\n");
+//				} else {
+//					Serial_PutString((uint8_t *)"Error: Flash write protection failed...\r\n");
+//				}
+//			}
+//		}
+//		break;
 		default:{
 			Serial_PutString((uint8_t *)"Invalid Number ! ==> The number should be either 1, 2, 3 or 4\r");
 		}
