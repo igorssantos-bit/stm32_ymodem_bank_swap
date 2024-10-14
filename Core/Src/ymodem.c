@@ -313,8 +313,7 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size) {
 						} else { /* Data packet */
 							ramsource = (uint32_t) & aPacketData[PACKET_DATA_INDEX];
 							/* Write received data in Flash */
-							/* FLASH_Write length in quadword (128 bits = 16 bytes) = packet_length / 16 */
-							if (FLASH_Write(flashdestination, (uint32_t*) ramsource, packet_length/16) == FLASHIF_OK) {
+							if (FLASH_Write(flashdestination, (uint32_t*) ramsource, packet_length) == FLASHIF_OK) {
 								flashdestination += packet_length;
 								Serial_PutByte(ACK);
 							} else { /* An error occurred while writing to Flash memory */

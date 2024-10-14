@@ -40,12 +40,16 @@ enum {
 	FLASHIF_WRITINGCTRL_ERROR,
 	FLASHIF_WRITING_ERROR
 };
+#if defined(STM32U535xx) || defined(STM32U545xx)
 /* Define the address from where user application will be loaded. */
 #define APPLICATION_ADDRESS (uint32_t)0x08040000
 /* End of the Flash address */
 #define USER_FLASH_END_ADDRESS 0x0807FFFF
 /* Define the user application size */
 #define USER_FLASH_SIZE (USER_FLASH_END_ADDRESS - APPLICATION_ADDRESS + 1)
+#else
+#error "Wrong MCU version"
+#endif
 
 /* USER CODE END Private defines */
 
@@ -54,7 +58,7 @@ void MX_FLASH_Init(void);
 /* USER CODE BEGIN Prototypes */
 void FLASH_Init(void);
 uint32_t FLASH_Erase(uint32_t start);
-uint32_t FLASH_Write(uint32_t destination, uint32_t *p_source, uint32_t length);
+uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt);
 
 /* USER CODE END Prototypes */
 

@@ -21,6 +21,7 @@
 #include "flash.h"
 
 /* USER CODE BEGIN 0 */
+#include "string.h"
 #include "icache.h"
 
 /* USER CODE END 0 */
@@ -74,7 +75,7 @@ uint32_t FLASH_Erase(uint32_t start) {
 	uint32_t result = FLASHIF_OK;
 	uint32_t pageerror;
 	/* NOTE: Following implementation expects the IAP code address to be < Application address */
-	if (start < USER_FLASH_END_ADDRESS) return FLASHIF_ERASEKO;
+	if (start >= USER_FLASH_END_ADDRESS) return FLASHIF_ERASEKO;
 	/* Unlock the Flash to enable the flash control register access *************/
 	FLASH_Init();
 	/* Get the page where start the user flash area */
@@ -102,41 +103,38 @@ uint32_t FLASH_Erase(uint32_t start) {
 /**
  * @brief  This function writes a data buffer in flash (data are 32-bit aligned).
  * @note   After writing data buffer, the flash content is checked.
- * @param  destination: start address for target location
- * @param  p_source: pointer on buffer with data to write
- * @param  length: length of data buffer (unit is 32-bit word)
- * @retval uint32_t 0: Data successfully written to Flash memory
- *         1: Error occurred while writing data in Flash memory
- *         2: Written Data in flash memory is different from expected one
+ * @param  addr: start address for target location
+ * @param  data: pointer on buffer with data to write
+ * @param  cnt: length of data buffer in bytes
+ * @retval uint32_t FLASHIF_OK: Data successfully written to Flash memory
+ *         FLASHIF_WRITINGCTRL_ERROR: Error occurred while writing data in Flash memory
+ *         FLASHIF_WRITING_ERROR: Written Data in flash memory is different from expected one
  */
-uint32_t FLASH_Write(uint32_t destination, uint32_t *p_source, uint32_t length) {
-    uint32_t status = FLASHIF_OK;
-    uint32_t i = 0;
-    /* Certifique-se de que o comprimento é um múltiplo de 4 para quad words (16 bytes) */
-    if (length % 4 != 0) return FLASHIF_WRITINGCTRL_ERROR;
+uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt) {
+	HAL_StatusTypeDef err;
+    uint32_t loop = 0;
+    void *dest = (void *)addr;
+    /* Check if data is aligned */
+    if (cnt % 4 != 0) return FLASHIF_WRITINGCTRL_ERROR;
     /* Unlock the Flash to enable the flash control register access */
     HAL_FLASH_Unlock();
     HAL_ICACHE_Disable();
-    for (i = 0; (i < length / 4) && (destination <= (USER_FLASH_END_ADDRESS - 16)); i++) {
-        /* Device voltage range supposed to be [2.7V to 3.6V], the operation will be done by quad word */
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, destination, *((uint64_t *)(p_source + 4 * i))) == HAL_OK) {
-            /* Check the written value */
-            if ((uint64_t)destination != *(uint64_t *)(p_source + 4 * i)) {
-                /* Flash content doesn't match SRAM content */
-                status = FLASHIF_WRITINGCTRL_ERROR;
-                break;
-            }
-            /* Increment FLASH destination address */
-            destination += 16;
-        } else {
-            /* Error occurred while writing data in Flash memory */
-            status = FLASHIF_WRITING_ERROR;
-            break;
-        }
-    }
+    /* Flash Program loop for QUADWORD type */
+    do {
+    	uint64_t dword[2];
+    	memcpy(dword, (void *)((uint32_t)data + loop), sizeof(dword));
+    	if ((dword[0] != -1) || (dword[1] != -1))
+    		err = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, addr, (uint32_t)&dword[0]);
+    	else
+    		err = HAL_OK;
+    	loop += sizeof(dword);
+    	addr += sizeof(dword);
+    } while ((loop != cnt) && (err == HAL_OK));
     MX_ICACHE_Init();
     HAL_FLASH_Lock();
-    return status;
+    /* Check written data */
+	if ((err == HAL_OK) && memcmp(dest, data, cnt)) return FLASHIF_WRITING_ERROR;
+    return (err == HAL_OK) ? FLASHIF_OK : FLASHIF_WRITINGCTRL_ERROR;
 }
 
 /* USER CODE END 1 */
