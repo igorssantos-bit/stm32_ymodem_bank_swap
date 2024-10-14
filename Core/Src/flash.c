@@ -60,8 +60,7 @@ void FLASH_Init(void){
 	/* Unlock the Program memory */
 	HAL_FLASH_Unlock();
 	/* Clear pending flags (if any) */
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR |
-			FLASH_FLAG_WRPERR | FLASH_FLAG_PGSERR);
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 }
 
 /**
@@ -138,72 +137,6 @@ uint32_t FLASH_Write(uint32_t destination, uint32_t *p_source, uint32_t length) 
     MX_ICACHE_Init();
     HAL_FLASH_Lock();
     return status;
-}
-
-/**
-  * @brief  Returns the write protection status of user flash area.
-  * @param  None
-  * @retval 0: No write protected pages inside the user flash area
-  *         1: Some pages inside the user flash area are write protected
-  */
-uint16_t FLASH_GetWriteProtectionStatus(void) {
-	uint32_t ProtectedArea = 0x0;
-	FLASH_OBProgramInitTypeDef OptionsBytesStructA, OptionsBytesStructB;
-	if (APPLICATION_ADDRESS < (FLASH_BASE + FLASH_BANK_SIZE)) {
-		OptionsBytesStructA.WRPArea = OB_WRPAREA_BANK1_AREAA;
-		/* Get the current configuration of the option bytes of A area */
-		HAL_FLASHEx_OBGetConfig(&OptionsBytesStructA);
-		OptionsBytesStructB.WRPArea = OB_WRPAREA_BANK1_AREAB;
-		/* Get the current configuration of the option bytes of B area */
-		HAL_FLASHEx_OBGetConfig(&OptionsBytesStructB);
-	} else {
-		OptionsBytesStructA.WRPArea = OB_WRPAREA_BANK2_AREAA;
-		/* Get the current configuration of the option bytes of A area */
-		HAL_FLASHEx_OBGetConfig(&OptionsBytesStructA);
-		OptionsBytesStructB.WRPArea = OB_WRPAREA_BANK2_AREAB;
-		/* Get the current configuration of the option bytes of B area */
-		HAL_FLASHEx_OBGetConfig(&OptionsBytesStructB);
-	}
-	return (OptionsBytesStructA.WRPLock & OptionsBytesStructB.WRPLock);
-	/* Get pages already write protected */
-	ProtectedArea = OptionsBytesStructA.WRPLock & OptionsBytesStructB.WRPLock;
-	return ProtectedArea;
-}
-
-/**
- * @brief  Configure the write protection status of user flash area.
- * @param  modifier DISABLE or ENABLE the protection
- * @retval HAL_StatusTypeDef HAL_OK if change is applied.
- */
-HAL_StatusTypeDef FLASH_WriteProtectionConfig(uint32_t modifier) {
-	FLASH_OBProgramInitTypeDef config_new, config_old;
-	HAL_StatusTypeDef result = HAL_OK;
-	/* Unlock the Flash to enable the flash control register access *************/
-	HAL_FLASH_Unlock();
-	/* Unlock the Options Bytes *************************************************/
-	HAL_FLASH_OB_Unlock();
-	/* Get the current configuration of the option bytes ************************/
-	if (APPLICATION_ADDRESS < (FLASH_BASE + FLASH_BANK_SIZE)) {
-		config_old.WRPArea = OB_WRPAREA_BANK1_AREAA;
-	} else {
-		config_old.WRPArea = OB_WRPAREA_BANK2_AREAA;
-	}
-	HAL_FLASHEx_OBGetConfig(&config_old);
-	/* Configure the write protection state *************************************/
-	config_new.WRPLock = modifier;
-	config_new.OptionType = OPTIONBYTE_WRP;
-	/* Keep the current RDP level and user configuration ************************/
-	config_new.RDPLevel = config_old.RDPLevel;
-	config_new.USERConfig = config_old.USERConfig;
-	config_new.WRPArea = config_old.WRPArea;
-	/* Program the new option byte configuration ********************************/
-	result = HAL_FLASHEx_OBProgram(&config_new);
-	config_new.WRPArea = config_new.WRPArea << 1;
-	result |= HAL_FLASHEx_OBProgram(&config_new);
-	/* Lock the Options Bytes and Flash *****************************************/
-	HAL_FLASH_OB_Lock();
-	HAL_FLASH_Lock();
-	return result;
 }
 
 /* USER CODE END 1 */

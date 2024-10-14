@@ -55,8 +55,6 @@ void MX_FLASH_Init(void);
 void FLASH_Init(void);
 uint32_t FLASH_Erase(uint32_t start);
 uint32_t FLASH_Write(uint32_t destination, uint32_t *p_source, uint32_t length);
-uint16_t FLASH_GetWriteProtectionStatus(void);
-HAL_StatusTypeDef FLASH_WriteProtectionConfig(uint32_t modifier);
 
 /* USER CODE END Prototypes */
 
