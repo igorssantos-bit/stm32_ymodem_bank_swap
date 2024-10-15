@@ -34,6 +34,8 @@ void MX_FLASH_Init(void)
 
   /* USER CODE END FLASH_Init 0 */
 
+  FLASH_OBProgramInitTypeDef pOBInit = {0};
+
   /* USER CODE BEGIN FLASH_Init 1 */
 
   /* USER CODE END FLASH_Init 1 */
@@ -41,10 +43,32 @@ void MX_FLASH_Init(void)
   {
     Error_Handler();
   }
+
+  /* Option Bytes settings */
+
+  if (HAL_FLASH_OB_Unlock() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  pOBInit.OptionType = OPTIONBYTE_USER;
+  pOBInit.USERType = OB_USER_DUALBANK;
+  pOBInit.USERConfig = OB_DUALBANK_DUAL;
+  if (HAL_FLASHEx_OBProgram(&pOBInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_FLASH_OB_Lock() != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_FLASH_Lock() != HAL_OK)
   {
     Error_Handler();
   }
+
+  /* Launch Option Bytes Loading */
+  /*HAL_FLASH_OB_Launch(); */
+
   /* USER CODE BEGIN FLASH_Init 2 */
 
   /* USER CODE END FLASH_Init 2 */
@@ -52,18 +76,6 @@ void MX_FLASH_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-/**
- * @brief  Unlocks Flash for write access
- * @param  None
- * @retval None
- */
-void FLASH_Init(void){
-	/* Unlock the Program memory */
-	HAL_FLASH_Unlock();
-	/* Clear pending flags (if any) */
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-}
-
 /**
  * @brief  This function does an erase of all user flash area
  * @param  start: start of user flash area
@@ -77,7 +89,8 @@ uint32_t FLASH_Erase(uint32_t start) {
 	/* NOTE: Following implementation expects the IAP code address to be < Application address */
 	if (start >= USER_FLASH_END_ADDRESS) return FLASHIF_ERASEKO;
 	/* Unlock the Flash to enable the flash control register access *************/
-	FLASH_Init();
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 	/* Get the page where start the user flash area */
 	if (start < (FLASH_BASE + FLASH_BANK_SIZE)) {
 		/* Bank 1 */
@@ -117,7 +130,8 @@ uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt) {
     /* Check if data is aligned */
     if (cnt % 4 != 0) return FLASHIF_WRITINGCTRL_ERROR;
     /* Unlock the Flash to enable the flash control register access */
-    HAL_FLASH_Unlock();
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
     HAL_ICACHE_Disable();
     /* Flash Program loop for QUADWORD type */
     do {

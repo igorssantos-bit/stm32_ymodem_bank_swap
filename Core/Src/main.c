@@ -124,7 +124,8 @@ int main(void)
   /* USER CODE BEGIN BSP */
   if (BSP_PB_GetState(BUTTON_USER) == RESET){
 	  /* Initialise Flash */
-	  FLASH_Init();
+	  HAL_FLASH_Unlock();
+	  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 	  /* Display main menu */
 	  Main_Menu();
   }else{
