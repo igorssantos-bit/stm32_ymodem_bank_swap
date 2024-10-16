@@ -31,12 +31,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef  void (*pFunction)(void);
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define RAM_START_ADDRESS  0x20000000
+#define RAM_RANGE_MASK     0xFF000000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,8 +52,8 @@ COM_InitTypeDef BspCOMInit;
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
 
 /* USER CODE BEGIN PV */
-extern pFunction JumpToApplication;
-extern uint32_t JumpAddress;
+pFunction UserApp;
+uint32_t JumpAddress;
 
 /* USER CODE END PV */
 
@@ -129,15 +131,7 @@ int main(void)
 	  /* Display main menu */
 	  Main_Menu();
   }else{
-	  /* Test if user code is programmed starting from address "APPLICATION_ADDRESS" */
-	  if (((*(__IO uint32_t*)APPLICATION_ADDRESS) & 0x2FFE0000 ) == 0x20000000) {
-		  /* Jump to user application */
-		  JumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
-		  JumpToApplication = (pFunction) JumpAddress;
-		  /* Initialize user application's Stack Pointer */
-		  __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
-		  JumpToApplication();
-	  }
+	  CallUserApp(APPLICATION_ADDRESS);
   }
 
   /* USER CODE END BSP */
@@ -218,6 +212,41 @@ static void SystemPower_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void CallUserApp(uint32_t Address){
+	/* Print info about the to be loaded App*/
+	printf("**************************************************\r\n");
+	printf("********** In Application Programming ************\r\n");
+	printf("**************************************************\r\n");
+	printf("Loading app from 0x%08X (SP:0x%08X PC:0x%08X)\r\n",
+			(unsigned int)Address, *(unsigned int*)Address, *(unsigned int*)(Address+4));
+	printf("**************************************************\r\n");
+	/* Check App signature from loading address, the SP must point to the area 0x20010000 */
+	/* Please note that this assumes that the RAM region starts at RAM_START_ADDRESS, otherwise change it accotrdingly. */
+	if(((*(__IO uint32_t*)Address) & RAM_RANGE_MASK ) != RAM_START_ADDRESS){
+		printf("Invalid signature (SP)\r\n");
+		Error_Handler();
+	}
+	/* De-init all init'ed peripherals */
+	BSP_COM_DeInit(COM1);
+	BSP_LED_DeInit(LED_GREEN);
+	BSP_PB_DeInit(BUTTON_USER);
+	/* Disable HAL and timer */
+	HAL_SuspendTick();
+	HAL_RCC_DeInit();
+	HAL_DeInit();
+	/*  Disable interrupts for timers */
+	HAL_NVIC_DisableIRQ(SysTick_IRQn);
+	/* Clear any pending ones */
+	HAL_NVIC_ClearPendingIRQ(SysTick_IRQn);
+	/*Disable ICACHE*/
+	HAL_ICACHE_Disable();
+	HAL_ICACHE_DeInit();
+	/* Set SP and jump to PC */
+	JumpAddress = *(__IO uint32_t*) (Address + 4);
+	UserApp = (pFunction) JumpAddress;
+	__set_MSP(*(__IO uint32_t*) Address);
+	UserApp();
+}
 
 /* USER CODE END 4 */
 

@@ -55,6 +55,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void CallUserApp(uint32_t Address);
 
 /* USER CODE END EFP */
 

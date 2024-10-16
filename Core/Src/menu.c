@@ -37,8 +37,6 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-pFunction JumpToApplication;
-uint32_t JumpAddress;
 uint32_t FlashProtection = 0;
 uint8_t aFileName[FILE_NAME_LENGTH];
 
@@ -143,12 +141,7 @@ void Main_Menu(void) {
 		case '3': {
 			Serial_PutString((uint8_t *)"Start program execution......\r\n\n");
 			/* execute the new program */
-			JumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
-			/* Jump to user application */
-			JumpToApplication = (pFunction) JumpAddress;
-			/* Initialize user application's Stack Pointer */
-			__set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
-			JumpToApplication();
+			CallUserApp(APPLICATION_ADDRESS);
 		}
 		break;
 //		case '4': {
