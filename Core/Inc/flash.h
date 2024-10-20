@@ -40,15 +40,12 @@ enum {
 	FLASHIF_WRITINGCTRL_ERROR,
 	FLASHIF_WRITING_ERROR
 };
+
 #if defined(STM32U535xx) || defined(STM32U545xx)
-/* Define the address from where user application will be loaded. */
-#define APPLICATION_ADDRESS (uint32_t)0x08040000
-/* End of the Flash address */
-#define USER_FLASH_END_ADDRESS 0x0807FFFF
-/* Define the user application size */
-#define USER_FLASH_SIZE (USER_FLASH_END_ADDRESS - APPLICATION_ADDRESS + 1)
+#define FLASH_START_BANK1 (uint32_t) FLASH_BASE
+#define FLASH_START_BANK2 (uint32_t) (FLASH_BASE+FLASH_BANK_SIZE)
 #else
-#error "Wrong MCU version"
+#error "Not compatible"
 #endif
 
 /* USER CODE END Private defines */

@@ -248,7 +248,7 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size) {
 	uint8_t file_size[FILE_SIZE_LENGTH], tmp;
 	COM_StatusTypeDef result = COM_OK;
 	/* Initialize flashdestination variable */
-	flashdestination = APPLICATION_ADDRESS;
+	flashdestination = FLASH_START_BANK2;
 	while ((session_done == 0) && (result == COM_OK)) {
 		packets_received = 0;
 		file_done = 0;
@@ -292,7 +292,7 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size) {
 								Str2Int(file_size, &filesize);
 								/* Test the size of the image to be sent */
 								/* Image size is greater than Flash size */
-								if (*p_size > (USER_FLASH_SIZE + 1)) {
+								if (*p_size > FLASH_BANK_SIZE) {
 									/* End session */
 									tmp = CA;
 									HAL_UART_Transmit(&hcom_uart[COM1], &tmp, 1, NAK_TIMEOUT);
@@ -436,7 +436,7 @@ COM_StatusTypeDef Ymodem_Transmit (uint8_t *p_buf, const uint8_t *p_file_name, u
 				if (size > pkt_size) {
 					p_buf_int += pkt_size;
 					size -= pkt_size;
-					if (blk_number == (USER_FLASH_SIZE / PACKET_1K_SIZE)) {
+					if (blk_number == (FLASH_BANK_SIZE / PACKET_1K_SIZE)) {
 						result = COM_LIMIT; /* boundary error */
 					} else {
 						blk_number++;

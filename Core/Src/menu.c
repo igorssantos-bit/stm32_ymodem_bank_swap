@@ -86,7 +86,7 @@ void SerialUpload(void) {
 	HAL_UART_Receive(&hcom_uart[COM1], &status, 1, RX_TIMEOUT);
 	if ( status == CRC16) {
 		/* Transmit the flash image through ymodem protocol */
-		status = Ymodem_Transmit((uint8_t*)APPLICATION_ADDRESS, (const uint8_t*)"UploadedFlashImage.bin", USER_FLASH_SIZE);
+		status = Ymodem_Transmit((uint8_t*)FLASH_START_BANK2, (const uint8_t*)"UploadedFlashImage.bin", FLASH_BANK_SIZE);
 		if (status != 0) {
 			Serial_PutString((uint8_t *)"\n\rError Occurred while Transmitting File\n\r");
 		} else {
@@ -141,7 +141,7 @@ void Main_Menu(void) {
 		case '3': {
 			Serial_PutString((uint8_t *)"Start program execution......\r\n\n");
 			/* execute the new program */
-			CallUserApp(APPLICATION_ADDRESS);
+			CallUserApp(FLASH_START_BANK2);
 		}
 		break;
 //		case '4': {

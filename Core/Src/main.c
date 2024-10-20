@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "flash.h"
 #include "icache.h"
 #include "memorymap.h"
 #include "gpio.h"
@@ -102,6 +103,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ICACHE_Init();
+  MX_FLASH_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -131,7 +133,7 @@ int main(void)
 	  /* Display main menu */
 	  Main_Menu();
   }else{
-	  CallUserApp(APPLICATION_ADDRESS);
+	  CallUserApp(FLASH_START_BANK2);
   }
 
   /* USER CODE END BSP */

@@ -87,7 +87,7 @@ uint32_t FLASH_BankErase(uint32_t bank) {
 	uint32_t result = FLASHIF_OK;
 	uint32_t pageerror;
 	/* Check the parameters */
-	if(!IS_FLASH_BANK(bank)) return FLASHIF_ERASEKO;
+	if(!IS_FLASH_BANK_EXCLUSIVE(bank)) return FLASHIF_ERASEKO;
 	/* Unlock the Flash to enable the flash control register access */
 	HAL_FLASH_Unlock();
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
@@ -150,27 +150,25 @@ uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt) {
  */
 void Flash_BankSwap(void){
 	FLASH_OBProgramInitTypeDef OBInit = {0};
-	/* Get the boot configuration status */
+    /* Unlock the Flash to enable the flash control register access */
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+    HAL_ICACHE_Disable();
+	/* Get the option bytes configuration status */
 	HAL_FLASHEx_OBGetConfig(&OBInit);
+	OBInit.OptionType = OPTIONBYTE_USER;
+	OBInit.USERType = OB_USER_SWAP_BANK;
 	/* Check Swap Flash banks  status */
-	if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE) {
-		/*Swap to bank2 */
-		/*Set OB SWAP_BANK_OPT to swap Bank2*/
-		OBInit.OptionType = OPTIONBYTE_USER;
-		OBInit.USERType = OB_USER_SWAP_BANK;;
-		OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
-		HAL_FLASHEx_OBProgram(&OBInit);
-		/* Launch Option bytes loading */
-		HAL_FLASH_OB_Launch();
+	if ((OBInit.USERConfig & FLASH_OPTR_SWAP_BANK_Msk) == OB_SWAP_BANK_DISABLE) {
+		OBInit.USERConfig = OB_SWAP_BANK_ENABLE; /* Swap to bank 2 */
 	} else {
-		/* Swap to bank1 */
-		/*Set OB SWAP_BANK_OPT to swap Bank1*/
-		OBInit.OptionType = OPTIONBYTE_USER;
-		OBInit.USERType = OB_USER_SWAP_BANK;
-		OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
-		HAL_FLASHEx_OBProgram(&OBInit);
-		/* Launch Option bytes loading */
-		HAL_FLASH_OB_Launch();
+		OBInit.USERConfig = OB_SWAP_BANK_DISABLE; /* Swap to bank 1 */
 	}
+	/* Flash and Launch Option bytes loading */
+	if(HAL_FLASHEx_OBProgram(&OBInit) != HAL_OK) return;
+	if(HAL_FLASH_OB_Launch() != HAL_OK) return;
+	/* Lock the Flash to disable the flash control register access */
+    MX_ICACHE_Init();
+    HAL_FLASH_Lock();
 }
 /* USER CODE END 1 */
