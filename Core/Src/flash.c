@@ -78,36 +78,29 @@ void MX_FLASH_Init(void)
 /* USER CODE BEGIN 1 */
 /**
  * @brief  This function does an erase of all user flash area
- * @param  start: start of user flash area
+ * @param  bank: Flash bank to be erased.
  * @retval FLASHIF_OK : user flash area successfully erased
  *         FLASHIF_ERASEKO : error occurred
  */
-uint32_t FLASH_Erase(uint32_t start) {
+uint32_t FLASH_BankErase(uint32_t bank) {
 	FLASH_EraseInitTypeDef desc;
 	uint32_t result = FLASHIF_OK;
 	uint32_t pageerror;
-	/* NOTE: Following implementation expects the IAP code address to be < Application address */
-	if (start >= USER_FLASH_END_ADDRESS) return FLASHIF_ERASEKO;
-	/* Unlock the Flash to enable the flash control register access *************/
+	/* Check the parameters */
+	if(!IS_FLASH_BANK(bank)) return FLASHIF_ERASEKO;
+	/* Unlock the Flash to enable the flash control register access */
 	HAL_FLASH_Unlock();
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-	/* Get the page where start the user flash area */
-	if (start < (FLASH_BASE + FLASH_BANK_SIZE)) {
-		/* Bank 1 */
-		desc.Page = (start - FLASH_BASE) / FLASH_PAGE_SIZE;
-		desc.Banks = FLASH_BANK_1;
-	} else {
-		/* Bank 2 */
-		desc.Page = (start - (FLASH_BASE + FLASH_BANK_SIZE)) / FLASH_PAGE_SIZE;
-		desc.Banks = FLASH_BANK_2;
-	}
-	desc.TypeErase = FLASH_TYPEERASE_PAGES;
-	desc.NbPages = (USER_FLASH_END_ADDRESS - start) / FLASH_PAGE_SIZE;
-	/* Erase user pages */
+	/* Setting erase options */
+	desc.NbPages = FLASH_BANK_SIZE;
+	desc.Page = 0U;
+	desc.TypeErase = FLASH_TYPEERASE_MASSERASE;
+	desc.Banks = bank;
+	/* Erase bank */
 	HAL_ICACHE_Disable();
     if (HAL_FLASHEx_Erase(&desc, &pageerror) != HAL_OK) result = FLASHIF_ERASEKO;
     MX_ICACHE_Init();
-    /* Lock the Flash to disable the flash control register access *************/
+    /* Lock the Flash to disable the flash control register access */
 	HAL_FLASH_Lock();
 	return result;
 }
