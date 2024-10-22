@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "flash.h"
 #include "icache.h"
 #include "memorymap.h"
 #include "gpio.h"
@@ -32,14 +31,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef  void (*pFunction)(void);
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RAM_START_ADDRESS  0x20000000
-#define RAM_RANGE_MASK     0xFF000000
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,13 +45,11 @@ typedef  void (*pFunction)(void);
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
+FLASH_OBProgramInitTypeDef OBInit;
 COM_InitTypeDef BspCOMInit;
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
 
 /* USER CODE BEGIN PV */
-pFunction UserApp;
-uint32_t JumpAddress;
 
 /* USER CODE END PV */
 
@@ -103,7 +98,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ICACHE_Init();
-  MX_FLASH_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -126,15 +120,11 @@ int main(void)
   }
 
   /* USER CODE BEGIN BSP */
-  if (BSP_PB_GetState(BUTTON_USER) == RESET){
-	  /* Initialise Flash */
-	  HAL_FLASH_Unlock();
-	  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-	  /* Display main menu */
-	  Main_Menu();
-  }else{
-	  CallUserApp(FLASH_START_BANK2);
-  }
+  Main_Menu();
+
+  /* Unlock the User Flash area */
+  HAL_FLASH_Unlock();
+  HAL_FLASH_OB_Unlock();
 
   /* USER CODE END BSP */
 
@@ -142,7 +132,32 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  /* Wait for BUTTON_USER is released */
+	  if (BSP_PB_GetState(BUTTON_USER) == SET){
+		  while (BSP_PB_GetState(BUTTON_USER) == SET);
+		  /* Get the boot configuration status */
+		  HAL_FLASHEx_OBGetConfig(&OBInit);
+		  /* Check Swap Flash banks  status */
+		  if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE){
+			  /*Swap to bank2 */
+			  /*Set OB SWAP_BANK_OPT to swap Bank2*/
+			  OBInit.OptionType = OPTIONBYTE_USER;
+			  OBInit.USERType = OB_USER_SWAP_BANK;;
+			  OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
+			  HAL_FLASHEx_OBProgram(&OBInit);
+			  /* Launch Option bytes loading */
+			  HAL_FLASH_OB_Launch();
+		  }else{
+			  /* Swap to bank1 */
+			  /*Set OB SWAP_BANK_OPT to swap Bank1*/
+			  OBInit.OptionType = OPTIONBYTE_USER;
+			  OBInit.USERType = OB_USER_SWAP_BANK;
+			  OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
+			  HAL_FLASHEx_OBProgram(&OBInit);
+			  /* Launch Option bytes loading */
+			  HAL_FLASH_OB_Launch();
+		  }
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -214,41 +229,6 @@ static void SystemPower_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void CallUserApp(uint32_t Address){
-	/* Print info about the to be loaded App*/
-	printf("**************************************************\r\n");
-	printf("********** In Application Programming ************\r\n");
-	printf("**************************************************\r\n");
-	printf("Loading app from 0x%08X (SP:0x%08X PC:0x%08X)\r\n",
-			(unsigned int)Address, *(unsigned int*)Address, *(unsigned int*)(Address+4));
-	printf("**************************************************\r\n");
-	/* Check App signature from loading address, the SP must point to the area 0x20010000 */
-	/* Please note that this assumes that the RAM region starts at RAM_START_ADDRESS, otherwise change it accotrdingly. */
-	if(((*(__IO uint32_t*)Address) & RAM_RANGE_MASK ) != RAM_START_ADDRESS){
-		printf("Invalid signature (SP)\r\n");
-		Error_Handler();
-	}
-	/* De-init all init'ed peripherals */
-	BSP_COM_DeInit(COM1);
-	BSP_LED_DeInit(LED_GREEN);
-	BSP_PB_DeInit(BUTTON_USER);
-	/* Disable HAL and timer */
-	HAL_SuspendTick();
-	HAL_RCC_DeInit();
-	HAL_DeInit();
-	/*  Disable interrupts for timers */
-	HAL_NVIC_DisableIRQ(SysTick_IRQn);
-	/* Clear any pending ones */
-	HAL_NVIC_ClearPendingIRQ(SysTick_IRQn);
-	/*Disable ICACHE*/
-	HAL_ICACHE_Disable();
-	HAL_ICACHE_DeInit();
-	/* Set SP and jump to PC */
-	JumpAddress = *(__IO uint32_t*) (Address + 4);
-	UserApp = (pFunction) JumpAddress;
-	__set_MSP(*(__IO uint32_t*) Address);
-	UserApp();
-}
 
 /* USER CODE END 4 */
 

@@ -55,6 +55,7 @@ void MX_FLASH_Init(void);
 /* USER CODE BEGIN Prototypes */
 uint32_t FLASH_BankErase(uint32_t bank);
 uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt);
+uint32_t Flash_Get_ActiveBank(void);
 void Flash_BankSwap(void);
 
 /* USER CODE END Prototypes */

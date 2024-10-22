@@ -34,8 +34,6 @@ void MX_FLASH_Init(void)
 
   /* USER CODE END FLASH_Init 0 */
 
-  FLASH_OBProgramInitTypeDef pOBInit = {0};
-
   /* USER CODE BEGIN FLASH_Init 1 */
 
   /* USER CODE END FLASH_Init 1 */
@@ -43,32 +41,10 @@ void MX_FLASH_Init(void)
   {
     Error_Handler();
   }
-
-  /* Option Bytes settings */
-
-  if (HAL_FLASH_OB_Unlock() != HAL_OK)
-  {
-    Error_Handler();
-  }
-  pOBInit.OptionType = OPTIONBYTE_USER;
-  pOBInit.USERType = OB_USER_DUALBANK;
-  pOBInit.USERConfig = OB_DUALBANK_DUAL;
-  if (HAL_FLASHEx_OBProgram(&pOBInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_FLASH_OB_Lock() != HAL_OK)
-  {
-    Error_Handler();
-  }
   if (HAL_FLASH_Lock() != HAL_OK)
   {
     Error_Handler();
   }
-
-  /* Launch Option Bytes Loading */
-  /*HAL_FLASH_OB_Launch(); */
-
   /* USER CODE BEGIN FLASH_Init 2 */
 
   /* USER CODE END FLASH_Init 2 */
@@ -99,8 +75,8 @@ uint32_t FLASH_BankErase(uint32_t bank) {
 	/* Erase bank */
 	HAL_ICACHE_Disable();
     if (HAL_FLASHEx_Erase(&desc, &pageerror) != HAL_OK) result = FLASHIF_ERASEKO;
-    MX_ICACHE_Init();
     /* Lock the Flash to disable the flash control register access */
+    MX_ICACHE_Init();
 	HAL_FLASH_Lock();
 	return result;
 }
@@ -136,6 +112,7 @@ uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt) {
     	loop += sizeof(dword);
     	addr += sizeof(dword);
     } while ((loop != cnt) && (err == HAL_OK));
+    /* Lock the Flash to disable the flash control register access */
     MX_ICACHE_Init();
     HAL_FLASH_Lock();
     /* Check written data */
@@ -146,29 +123,61 @@ uint32_t FLASH_Write(uint32_t addr, const void *data, uint32_t cnt) {
 /**
  * @brief  This function swaps the active flash bank.
  * @param  None.
+ * @retval uint32_t FLASH_BANK_1: Flash bank 1 is active
+ *         FLASH_BANK_2: Flash bank 2 is active
+ */
+uint32_t Flash_Get_ActiveBank(void){
+	FLASH_OBProgramInitTypeDef OBInit = {0};
+	uint32_t bank = 0;
+    /* Unlock the Flash to enable the flash control register access */
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+	/* Get the option bytes configuration status */
+	HAL_FLASHEx_OBGetConfig(&OBInit);
+	/* Check OB_SWAP_BANK status */
+	if ((OBInit.USERConfig & FLASH_OPTR_SWAP_BANK_Msk) == OB_SWAP_BANK_DISABLE) {
+		bank = FLASH_BANK_1;
+	} else {
+		bank = FLASH_BANK_2;
+	}
+	/* Lock the Flash to disable the flash control register access */
+    HAL_FLASH_Lock();
+    return bank;
+}
+
+/**
+ * @brief  This function swaps the active flash bank.
+ * @param  None.
  * @retval None.
  */
 void Flash_BankSwap(void){
 	FLASH_OBProgramInitTypeDef OBInit = {0};
     /* Unlock the Flash to enable the flash control register access */
-	HAL_FLASH_Unlock();
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+    if (HAL_FLASH_Unlock() != HAL_OK) Error_Handler();
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+    /* Unlock Option Bytes */
+    if (HAL_FLASH_OB_Unlock() != HAL_OK) Error_Handler();
+    /* Get the option bytes configuration status */
+    HAL_FLASHEx_OBGetConfig(&OBInit);
+    OBInit.OptionType = OPTIONBYTE_USER;
+    OBInit.USERType = OB_USER_SWAP_BANK;
+    /* Check OB_SWAP_BANK status */
+    if ((OBInit.USERConfig & FLASH_OPTR_SWAP_BANK_Msk) == OB_SWAP_BANK_DISABLE) {
+    	OBInit.USERConfig = OB_SWAP_BANK_ENABLE; /* Swap to bank 2 */
+    } else {
+    	OBInit.USERConfig = OB_SWAP_BANK_DISABLE; /* Swap to bank 1 */
+    }
+    /*  Disable interrupts for timers */
+    HAL_NVIC_DisableIRQ(SysTick_IRQn);
+    /* Clear any pending ones */
+    HAL_NVIC_ClearPendingIRQ(SysTick_IRQn);
+    /*Disable ICACHE*/
     HAL_ICACHE_Disable();
-	/* Get the option bytes configuration status */
-	HAL_FLASHEx_OBGetConfig(&OBInit);
-	OBInit.OptionType = OPTIONBYTE_USER;
-	OBInit.USERType = OB_USER_SWAP_BANK;
-	/* Check Swap Flash banks  status */
-	if ((OBInit.USERConfig & FLASH_OPTR_SWAP_BANK_Msk) == OB_SWAP_BANK_DISABLE) {
-		OBInit.USERConfig = OB_SWAP_BANK_ENABLE; /* Swap to bank 2 */
-	} else {
-		OBInit.USERConfig = OB_SWAP_BANK_DISABLE; /* Swap to bank 1 */
-	}
-	/* Flash and Launch Option bytes loading */
-	if(HAL_FLASHEx_OBProgram(&OBInit) != HAL_OK) return;
-	if(HAL_FLASH_OB_Launch() != HAL_OK) return;
-	/* Lock the Flash to disable the flash control register access */
-    MX_ICACHE_Init();
-    HAL_FLASH_Lock();
+    HAL_ICACHE_DeInit();
+    /* Program Option bytes loading */
+    if (HAL_FLASHEx_OBProgram(&OBInit) != HAL_OK) Error_Handler();
+    /* Launch Option Bytes Loading */
+    if (HAL_FLASH_OB_Launch() != HAL_OK) Error_Handler();
 }
+
 /* USER CODE END 1 */

@@ -241,14 +241,21 @@ uint8_t CalcChecksum(const uint8_t *p_data, uint32_t size) {
  * @param  p_size The size of the file.
  * @retval COM_StatusTypeDef result of reception/programming
  */
-COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size) {
+COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 	uint32_t i, packet_length, session_done = 0, file_done, errors = 0, session_begin = 0, packets_received = 0;
 	uint32_t flashdestination, ramsource, filesize;
 	uint8_t *file_ptr;
 	uint8_t file_size[FILE_SIZE_LENGTH], tmp;
 	COM_StatusTypeDef result = COM_OK;
+	/* Check the parameters */
+	if(!IS_FLASH_BANK_EXCLUSIVE(bank)) return COM_ERROR;
 	/* Initialize flashdestination variable */
-	flashdestination = FLASH_START_BANK2;
+	if(bank == FLASH_BANK_2){
+		flashdestination = FLASH_START_BANK2;
+	}else{
+		flashdestination = FLASH_START_BANK1;
+	}
+	/* Ymodem loop */
 	while ((session_done == 0) && (result == COM_OK)) {
 		packets_received = 0;
 		file_done = 0;
@@ -300,7 +307,7 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size) {
 									result = COM_LIMIT;
 								}
 								/* erase user application area */
-								FLASH_BankErase(FLASH_BANK_2);
+								FLASH_BankErase(bank);
 								*p_size = filesize;
 								Serial_PutByte(ACK);
 								Serial_PutByte(CRC16);

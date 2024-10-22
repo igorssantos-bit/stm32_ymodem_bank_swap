@@ -39,6 +39,7 @@
 /* Private variables ---------------------------------------------------------*/
 uint32_t FlashProtection = 0;
 uint8_t aFileName[FILE_NAME_LENGTH];
+uint32_t BankActive = 0U, BankInactive = 0U;
 
 /* Private function prototypes -----------------------------------------------*/
 void SerialDownload(void);
@@ -55,7 +56,7 @@ void SerialDownload(void) {
 	uint32_t size = 0;
 	COM_StatusTypeDef result;
 	Serial_PutString((uint8_t *)"Waiting for the file to be sent ... (press 'a' to abort)\n\r");
-	result = Ymodem_Receive( &size );
+	result = Ymodem_Receive(&size, BankInactive);
 	if (result == COM_OK) {
 		Serial_PutString((uint8_t *)"\n\n\r Programming Completed Successfully!\n\r--------------------------------\r\n Name: ");
 		Serial_PutString(aFileName);
@@ -102,12 +103,24 @@ void SerialUpload(void) {
  */
 void Main_Menu(void) {
 	uint8_t key = 0;
+	/* Test from which bank the program runs */
+	if(Flash_Get_ActiveBank() == FLASH_BANK_2){
+		BankActive = FLASH_BANK_2;
+		BankInactive = FLASH_BANK_1;
+	}else{
+		BankActive = FLASH_BANK_1;
+		BankInactive = FLASH_BANK_2;
+	}
 	Serial_PutString((uint8_t *)"\r\n======================================================================");
 	Serial_PutString((uint8_t *)"\r\n=              (C) COPYRIGHT 2017 STMicroelectronics                 =");
 	Serial_PutString((uint8_t *)"\r\n=                                                                    =");
-	Serial_PutString((uint8_t *)"\r\n=         STM32U5xx In-Application Programming Application           =");
+	Serial_PutString((uint8_t *)"\r\n=   STM32U545 On-the-fly update for dual bank demo  (Version 2.0.0)  =");
 	Serial_PutString((uint8_t *)"\r\n=                                                                    =");
-	Serial_PutString((uint8_t *)"\r\n=                      By MCD Application Team                       =");
+	if (BankActive == FLASH_BANK_2){
+		Serial_PutString((uint8_t *)"\r\n=                    Program running from Bank 2                     =");
+	}else{
+		Serial_PutString((uint8_t *)"\r\n=                    Program running from Bank 1                     =");
+	}
 	Serial_PutString((uint8_t *)"\r\n======================================================================");
 	Serial_PutString((uint8_t *)"\r\n\r\n");
 	while (1) {
@@ -116,7 +129,7 @@ void Main_Menu(void) {
 		Serial_PutString((uint8_t *)"\r\n=================== Main Menu ============================\r\n\n");
 		Serial_PutString((uint8_t *)"  Download image to the internal Flash ----------------- 1\r\n\n");
 //		Serial_PutString((uint8_t *)"  Upload image from the internal Flash ----------------- 2\r\n\n");
-		Serial_PutString((uint8_t *)"  Execute the loaded application ----------------------- 3\r\n\n");
+		Serial_PutString((uint8_t *)"  Exit menu -------------------------------------------- 3\r\n\n");
 //		if(FlashProtection) {
 //			Serial_PutString((uint8_t *)"  Disable the write protection ------------------------- 4\r\n\n");
 //		} else {
@@ -139,9 +152,8 @@ void Main_Menu(void) {
 //		}
 //		break;
 		case '3': {
-			Serial_PutString((uint8_t *)"Start program execution......\r\n\n");
-			/* execute the new program */
-			CallUserApp(FLASH_START_BANK2);
+			Serial_PutString((uint8_t *)"Press BUTTON_USER to swap Banks\r\n\n");
+			return;
 		}
 		break;
 //		case '4': {
