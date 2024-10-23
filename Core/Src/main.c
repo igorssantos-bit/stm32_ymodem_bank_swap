@@ -122,10 +122,6 @@ int main(void)
   /* USER CODE BEGIN BSP */
   Main_Menu();
 
-  /* Unlock the User Flash area */
-  HAL_FLASH_Unlock();
-  HAL_FLASH_OB_Unlock();
-
   /* USER CODE END BSP */
 
   /* Infinite loop */
@@ -135,29 +131,14 @@ int main(void)
 	  /* Wait for BUTTON_USER is released */
 	  if (BSP_PB_GetState(BUTTON_USER) == SET){
 		  while (BSP_PB_GetState(BUTTON_USER) == SET);
-		  /* Get the boot configuration status */
-		  HAL_FLASHEx_OBGetConfig(&OBInit);
-		  /* Check Swap Flash banks  status */
-		  if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE){
-			  /*Swap to bank2 */
-			  /*Set OB SWAP_BANK_OPT to swap Bank2*/
-			  OBInit.OptionType = OPTIONBYTE_USER;
-			  OBInit.USERType = OB_USER_SWAP_BANK;;
-			  OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
-			  HAL_FLASHEx_OBProgram(&OBInit);
-			  /* Launch Option bytes loading */
-			  HAL_FLASH_OB_Launch();
-		  }else{
-			  /* Swap to bank1 */
-			  /*Set OB SWAP_BANK_OPT to swap Bank1*/
-			  OBInit.OptionType = OPTIONBYTE_USER;
-			  OBInit.USERType = OB_USER_SWAP_BANK;
-			  OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
-			  HAL_FLASHEx_OBProgram(&OBInit);
-			  /* Launch Option bytes loading */
-			  HAL_FLASH_OB_Launch();
-		  }
+		  Bank_Swap();
+	  }else{
+		  /* Toggle LED1 */
+		  BSP_LED_Toggle(LED_GREEN);
+		  /* Insert 100 ms delay */
+		  HAL_Delay(100);
 	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -229,6 +210,33 @@ static void SystemPower_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Bank_Swap(void){
+	/* Unlock the User Flash area */
+	HAL_FLASH_Unlock();
+	HAL_FLASH_OB_Unlock();
+	/* Get the boot configuration status */
+	HAL_FLASHEx_OBGetConfig(&OBInit);
+	/* Check Swap Flash banks  status */
+	if ((OBInit.USERConfig & OB_SWAP_BANK_ENABLE) == OB_SWAP_BANK_DISABLE){
+		/*Swap to bank2 */
+		/*Set OB SWAP_BANK_OPT to swap Bank2*/
+		OBInit.OptionType = OPTIONBYTE_USER;
+		OBInit.USERType = OB_USER_SWAP_BANK;;
+		OBInit.USERConfig = OB_SWAP_BANK_ENABLE;
+		HAL_FLASHEx_OBProgram(&OBInit);
+		/* Launch Option bytes loading */
+		HAL_FLASH_OB_Launch();
+	}else{
+		/* Swap to bank1 */
+		/*Set OB SWAP_BANK_OPT to swap Bank1*/
+		OBInit.OptionType = OPTIONBYTE_USER;
+		OBInit.USERType = OB_USER_SWAP_BANK;
+		OBInit.USERConfig = OB_SWAP_BANK_DISABLE;
+		HAL_FLASHEx_OBProgram(&OBInit);
+		/* Launch Option bytes loading */
+		HAL_FLASH_OB_Launch();
+	}
+}
 
 /* USER CODE END 4 */
 

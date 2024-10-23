@@ -55,6 +55,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void Bank_Swap(void);
 
 /* USER CODE END EFP */
 
