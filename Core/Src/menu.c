@@ -28,10 +28,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "common.h"
 #include "flash.h"
 #include "menu.h"
 #include "ymodem.h"
+#include "stdio.h"
+#include "usart.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -43,7 +44,6 @@ uint32_t BankActive = 0U, BankInactive = 0U;
 
 /* Private function prototypes -----------------------------------------------*/
 void SerialDownload(void);
-void SerialUpload(void);
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -52,47 +52,22 @@ void SerialUpload(void);
  * @retval None
  */
 void SerialDownload(void) {
-	uint8_t number[11] = {0};
 	uint32_t size = 0;
 	COM_StatusTypeDef result;
-	Serial_PutString((uint8_t *)"Waiting for the file to be sent ... (press 'a' to abort)\n\r");
+	printf("Waiting for the file to be sent ... (press 'a' to abort)\n\r");
 	result = Ymodem_Receive(&size, BankInactive);
 	if (result == COM_OK) {
-		Serial_PutString((uint8_t *)"\n\n\r Programming Completed Successfully!\n\r--------------------------------\r\n Name: ");
-		Serial_PutString(aFileName);
-		Int2Str(number, size);
-		Serial_PutString((uint8_t *)"\n\r Size: ");
-		Serial_PutString(number);
-		Serial_PutString((uint8_t *)" Bytes\r\n");
-		Serial_PutString((uint8_t *)"-------------------\n");
+		printf("\n\n\r Programming Completed Successfully!\n\r--------------------------------\r\n Name: %s", aFileName);
+		printf("\n\r Size: %lu Bytes\r\n", size);
+		printf("-------------------\n");
 	} else if (result == COM_LIMIT) {
-		Serial_PutString((uint8_t *)"\n\n\rThe image size is higher than the allowed space memory!\n\r");
+		printf("\n\n\rThe image size is higher than the allowed space memory!\n\r");
 	} else if (result == COM_DATA) {
-		Serial_PutString((uint8_t *)"\n\n\rVerification failed!\n\r");
+		printf("\n\n\rVerification failed!\n\r");
 	} else if (result == COM_ABORT) {
-		Serial_PutString((uint8_t *)"\r\n\nAborted by user.\n\r");
+		printf("\r\n\nAborted by user.\n\r");
 	} else {
-		Serial_PutString((uint8_t *)"\n\rFailed to receive the file!\n\r");
-	}
-}
-
-/**
- * @brief  Upload a file via serial port.
- * @param  None
- * @retval None
- */
-void SerialUpload(void) {
-	uint8_t status = 0;
-	Serial_PutString((uint8_t *)"\n\n\rSelect Receive File\n\r");
-	HAL_UART_Receive(&hcom_uart[COM1], &status, 1, RX_TIMEOUT);
-	if ( status == CRC16) {
-		/* Transmit the flash image through ymodem protocol */
-		status = Ymodem_Transmit((uint8_t*)FLASH_START_BANK2, (const uint8_t*)"UploadedFlashImage.bin", FLASH_BANK_SIZE);
-		if (status != 0) {
-			Serial_PutString((uint8_t *)"\n\rError Occurred while Transmitting File\n\r");
-		} else {
-			Serial_PutString((uint8_t *)"\n\rFile uploaded successfully \n\r");
-		}
+		printf("\n\rFailed to receive the file!\n\r");
 	}
 }
 
@@ -111,48 +86,43 @@ void Main_Menu(void) {
 		BankActive = FLASH_BANK_1;
 		BankInactive = FLASH_BANK_2;
 	}
-	Serial_PutString((uint8_t *)"\r\n======================================================================");
-	Serial_PutString((uint8_t *)"\r\n=              (C) COPYRIGHT 2017 STMicroelectronics                 =");
-	Serial_PutString((uint8_t *)"\r\n=                                                                    =");
-	Serial_PutString((uint8_t *)"\r\n=   STM32U545 On-the-fly update for dual bank demo  (Version 2.0.0)  =");
-	Serial_PutString((uint8_t *)"\r\n=                                                                    =");
+	printf("\r\n======================================================================");
+	printf("\r\n=              (C) COPYRIGHT 2017 STMicroelectronics                 =");
+	printf("\r\n=                                                                    =");
+	printf("\r\n=   STM32U545 On-the-fly update for dual bank demo  (Version 2.0.0)  =");
+	printf("\r\n=                                                                    =");
 	if (BankActive == FLASH_BANK_2){
-		Serial_PutString((uint8_t *)"\r\n=                    Program running from Bank 2                     =");
+		printf("\r\n=                    Program running from Bank 2                     =");
 	}else{
-		Serial_PutString((uint8_t *)"\r\n=                    Program running from Bank 1                     =");
+		printf("\r\n=                    Program running from Bank 1                     =");
 	}
-	Serial_PutString((uint8_t *)"\r\n======================================================================");
-	Serial_PutString((uint8_t *)"\r\n\r\n");
+	printf("\r\n======================================================================");
+	printf("\r\n\r\n");
 	while (1) {
 		/* Test if any sector of Flash memory where user application will be loaded is write protected */
 //		FlashProtection = FLASH_GetWriteProtectionStatus();
-		Serial_PutString((uint8_t *)"\r\n=================== Main Menu ============================\r\n\n");
-		Serial_PutString((uint8_t *)"  Download image to the internal Flash ----------------- 1\r\n\n");
-//		Serial_PutString((uint8_t *)"  Upload image from the internal Flash ----------------- 2\r\n\n");
-		Serial_PutString((uint8_t *)"  Exit menu -------------------------------------------- 3\r\n\n");
+		printf("\r\n=================== Main Menu ============================\r\n\n");
+		printf("  Download image to the internal Flash ----------------- 1\r\n\n");
+		printf("  Exit menu -------------------------------------------- 3\r\n\n");
 //		if(FlashProtection) {
-//			Serial_PutString((uint8_t *)"  Disable the write protection ------------------------- 4\r\n\n");
+//			printf("  Disable the write protection ------------------------- 4\r\n\n");
 //		} else {
-//			Serial_PutString((uint8_t *)"  Enable the write protection -------------------------- 4\r\n\n");
+//			printf("  Enable the write protection -------------------------- 4\r\n\n");
 //		}
-		Serial_PutString((uint8_t *)"==========================================================\r\n\n");
+		printf("==========================================================\r\n\n");
 		/* Clean the input path */
-		__HAL_UART_FLUSH_DRREGISTER(&hcom_uart[COM1]);
+		__HAL_UART_FLUSH_DRREGISTER(&huart1);
+	    __HAL_UART_CLEAR_IT(&huart1, UART_CLEAR_OREF);
 		/* Receive key */
-		HAL_UART_Receive(&hcom_uart[COM1], &key, 1, RX_TIMEOUT);
+		HAL_UART_Receive(&huart1, &key, 1, HAL_MAX_DELAY);
 		switch (key) {
 		case '1': {
 			/* Download user application in the Flash */
 			SerialDownload();
 		}
 		break;
-//		case '2': {
-//			/* Upload user application from the Flash */
-//			SerialUpload();
-//		}
-//		break;
 		case '3': {
-			Serial_PutString((uint8_t *)"Press BUTTON_USER to swap Banks\r\n\n");
+			printf("Press BUTTON_USER to swap Banks\r\n\n");
 			return;
 		}
 		break;
@@ -160,23 +130,23 @@ void Main_Menu(void) {
 //			if (FlashProtection) {
 //				/* Disable the write protection */
 //				if (FLASH_WriteProtectionConfig(DISABLE) == HAL_OK) {
-//					Serial_PutString((uint8_t *)"Write Protection disabled...\r\n");
-//					Serial_PutString((uint8_t *)"System will now restart...\r\n");
+//					printf("Write Protection disabled...\r\n");
+//					printf("System will now restart...\r\n");
 //				} else {
-//					Serial_PutString((uint8_t *)"Error: Flash write un-protection failed...\r\n");
+//					printf("Error: Flash write un-protection failed...\r\n");
 //				}
 //			} else {
 //				if (FLASH_WriteProtectionConfig(ENABLE) == HAL_OK) {
-//					Serial_PutString((uint8_t *)"Write Protection enabled...\r\n");
-//					Serial_PutString((uint8_t *)"System will now restart...\r\n");
+//					printf("Write Protection enabled...\r\n");
+//					printf("System will now restart...\r\n");
 //				} else {
-//					Serial_PutString((uint8_t *)"Error: Flash write protection failed...\r\n");
+//					printf("Error: Flash write protection failed...\r\n");
 //				}
 //			}
 //		}
 //		break;
 		default:{
-			Serial_PutString((uint8_t *)"Invalid Number ! ==> The number should be either 1, 2, 3 or 4\r");
+			printf("Invalid Number ! ==> The number should be either 1, 2, 3 or 4\r");
 		}
 		break;
 		}

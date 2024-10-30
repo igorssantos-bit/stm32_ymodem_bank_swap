@@ -20,6 +20,7 @@
 #include "main.h"
 #include "icache.h"
 #include "memorymap.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -45,11 +46,11 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-FLASH_OBProgramInitTypeDef OBInit;
-COM_InitTypeDef BspCOMInit;
+
 __IO uint32_t BspButtonState = BUTTON_RELEASED;
 
 /* USER CODE BEGIN PV */
+FLASH_OBProgramInitTypeDef OBInit;
 
 /* USER CODE END PV */
 
@@ -57,6 +58,7 @@ __IO uint32_t BspButtonState = BUTTON_RELEASED;
 void SystemClock_Config(void);
 static void SystemPower_Config(void);
 /* USER CODE BEGIN PFP */
+int __io_putchar(int ch);
 
 /* USER CODE END PFP */
 
@@ -98,6 +100,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ICACHE_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -107,17 +110,6 @@ int main(void)
 
   /* Initialize USER push-button, will be used to trigger an interrupt each time it's pressed.*/
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
-
-  /* Initialize COM1 port (115200, 8 bits (7-bit data + 1 stop bit), no parity */
-  BspCOMInit.BaudRate   = 115200;
-  BspCOMInit.WordLength = COM_WORDLENGTH_8B;
-  BspCOMInit.StopBits   = COM_STOPBITS_1;
-  BspCOMInit.Parity     = COM_PARITY_NONE;
-  BspCOMInit.HwFlowCtl  = COM_HWCONTROL_NONE;
-  if (BSP_COM_Init(COM1, &BspCOMInit) != BSP_ERROR_NONE)
-  {
-    Error_Handler();
-  }
 
   /* USER CODE BEGIN BSP */
   Main_Menu();
@@ -210,6 +202,15 @@ static void SystemPower_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+  * @brief  Retarget printf to UART 1
+  * @retval int
+  */
+int __io_putchar(int ch){
+	uart_write_byte(ch);
+	return ch;
+}
+
 void Bank_Swap(void){
 	/* Unlock the User Flash area */
 	HAL_FLASH_Unlock();
