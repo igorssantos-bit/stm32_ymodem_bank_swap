@@ -28,6 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include "flash.h"
 #include "menu.h"
+#include "stdio.h"
 
 /* USER CODE END Includes */
 
@@ -115,6 +116,7 @@ int main(void)
 
   /* USER CODE BEGIN BSP */
   Main_Menu();
+  printf("Press BUTTON_USER to swap Banks\r\n\n");
 
   /* USER CODE END BSP */
 
@@ -209,7 +211,7 @@ static void SystemPower_Config(void)
   * @retval int
   */
 int __io_putchar(int ch){
-	uart_write_byte(ch);
+	uart_write_byte(&huart_p1, ch);
 	return ch;
 }
 

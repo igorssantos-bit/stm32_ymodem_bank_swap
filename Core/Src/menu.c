@@ -54,20 +54,20 @@ void SerialDownload(void);
 void SerialDownload(void) {
 	uint32_t size = 0;
 	COM_StatusTypeDef result;
-	printf("Waiting for the file to be sent ... (press 'a' to abort)\n\r");
+	printf("Waiting for the file to be sent ... (press 'a' to abort)\r\n");
 	result = Ymodem_Receive(&size, BankInactive);
 	if (result == COM_OK) {
-		printf("\n\n\r Programming Completed Successfully!\n\r--------------------------------\r\n Name: %s", aFileName);
-		printf("\n\r Size: %lu Bytes\r\n", size);
+		printf("\r\n Programming Completed Successfully!\r\n--------------------------------\r\n Name: %s", aFileName);
+		printf("\r\n Size: %lu Bytes\r\n", size);
 		printf("-------------------\n");
 	} else if (result == COM_LIMIT) {
-		printf("\n\n\rThe image size is higher than the allowed space memory!\n\r");
+		printf("\r\nThe image size is higher than the allowed space memory!\r\n");
 	} else if (result == COM_DATA) {
-		printf("\n\n\rVerification failed!\n\r");
+		printf("\n\r\nVerification failed!\r\n");
 	} else if (result == COM_ABORT) {
-		printf("\r\n\nAborted by user.\n\r");
+		printf("\r\n\nAborted by user.\r\n");
 	} else {
-		printf("\n\rFailed to receive the file!\n\r");
+		printf("\r\nFailed to receive the file!\r\n");
 	}
 }
 
@@ -77,7 +77,6 @@ void SerialDownload(void) {
  * @retval None
  */
 void Main_Menu(void) {
-	uint8_t key = 0;
 	/* Test from which bank the program runs */
 	if(Flash_Get_ActiveBank() == FLASH_BANK_2){
 		BankActive = FLASH_BANK_2;
@@ -100,55 +99,27 @@ void Main_Menu(void) {
 	printf("\r\n\r\n");
 	while (1) {
 		/* Test if any sector of Flash memory where user application will be loaded is write protected */
-//		FlashProtection = FLASH_GetWriteProtectionStatus();
-		printf("\r\n=================== Main Menu ============================\r\n\n");
-		printf("  Download image to the internal Flash ----------------- 1\r\n\n");
-		printf("  Exit menu -------------------------------------------- 3\r\n\n");
-//		if(FlashProtection) {
-//			printf("  Disable the write protection ------------------------- 4\r\n\n");
-//		} else {
-//			printf("  Enable the write protection -------------------------- 4\r\n\n");
-//		}
-		printf("==========================================================\r\n\n");
-		/* Clean the input path */
-		__HAL_UART_FLUSH_DRREGISTER(&huart1);
-	    __HAL_UART_CLEAR_IT(&huart1, UART_CLEAR_OREF);
+		printf("\r\n=================== Main Menu ============================\r\n");
+		printf("  Download image to the internal Flash ----------------- 1\r\n");
+		printf("  Exit menu -------------------------------------------- 2\r\n");
+		printf("==========================================================\r\n");
 		/* Receive key */
-		HAL_UART_Receive(&huart1, &key, 1, HAL_MAX_DELAY);
-		switch (key) {
-		case '1': {
-			/* Download user application in the Flash */
-			SerialDownload();
-		}
-		break;
-		case '3': {
-			printf("Press BUTTON_USER to swap Banks\r\n\n");
-			return;
-		}
-		break;
-//		case '4': {
-//			if (FlashProtection) {
-//				/* Disable the write protection */
-//				if (FLASH_WriteProtectionConfig(DISABLE) == HAL_OK) {
-//					printf("Write Protection disabled...\r\n");
-//					printf("System will now restart...\r\n");
-//				} else {
-//					printf("Error: Flash write un-protection failed...\r\n");
-//				}
-//			} else {
-//				if (FLASH_WriteProtectionConfig(ENABLE) == HAL_OK) {
-//					printf("Write Protection enabled...\r\n");
-//					printf("System will now restart...\r\n");
-//				} else {
-//					printf("Error: Flash write protection failed...\r\n");
-//				}
-//			}
-//		}
-//		break;
-		default:{
-			printf("Invalid Number ! ==> The number should be either 1, 2, 3 or 4\r");
-		}
-		break;
+		bool status = false;
+		uint32_t t0 = HAL_GetTick();
+		char buff[1];
+		/* Wait for the device to be ready to use again */
+		while(!status && (HAL_GetTick() - t0) < HAL_MAX_DELAY){
+			status = uart_read_byte(&huart_p1, &buff);
+			if(status){
+				if(buff[0] == '1'){
+					SerialDownload();
+				}else if(buff[0] == '2'){
+					printf("Exiting Main Menu...\r\n\r\n");
+					return;
+				}else{
+					printf("Invalid Number ! ==> The number should be either 1, 2, 3 or 4\r\n");
+				}
+			}
 		}
 	}
 }

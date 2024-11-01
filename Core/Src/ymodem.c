@@ -62,8 +62,8 @@ static HAL_StatusTypeDef ReceivePacket(uint8_t *p_data, uint32_t *p_length, uint
 	HAL_StatusTypeDef status;
 	uint8_t char1;
 	*p_length = 0;
-	status = HAL_UART_Receive(&huart1, &char1, 1, timeout);
-	if (status == HAL_OK) {
+	if (uart_read_loop(&huart_p1, &char1, 1, timeout)) {
+		status = HAL_OK;
 		switch (char1) {
 		case SOH: {
 			packet_size = PACKET_SIZE;
@@ -76,7 +76,7 @@ static HAL_StatusTypeDef ReceivePacket(uint8_t *p_data, uint32_t *p_length, uint
 		case EOT:{}
 		break;
 		case CA:{
-			if ((HAL_UART_Receive(&huart1, &char1, 1, timeout) == HAL_OK) && (char1 == CA)) {
+			if (uart_read_loop(&huart_p1, &char1, 1, timeout) && (char1 == CA)) {
 				packet_size = 2;
 			} else {
 				status = HAL_ERROR;
@@ -95,10 +95,10 @@ static HAL_StatusTypeDef ReceivePacket(uint8_t *p_data, uint32_t *p_length, uint
 		break;
 		}
 		*p_data = char1;
-		if (packet_size >= PACKET_SIZE ) {
-			status = HAL_UART_Receive(&huart1, &p_data[PACKET_NUMBER_INDEX], packet_size + PACKET_OVERHEAD_SIZE, timeout);
+		if (packet_size >= PACKET_SIZE) {
 			/* Simple packet sanity check */
-			if (status == HAL_OK ) {
+			if (uart_read_loop(&huart_p1, &p_data[PACKET_NUMBER_INDEX], packet_size + PACKET_OVERHEAD_SIZE, timeout)) {
+				status = HAL_OK;
 				if (p_data[PACKET_NUMBER_INDEX] != ((p_data[PACKET_CNUMBER_INDEX]) ^ NEGATIVE_BYTE)) {
 					packet_size = 0;
 					status = HAL_ERROR;
@@ -185,18 +185,18 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 				switch (packet_length) {
 				case 2:
 					/* Abort by sender */
-					uart_write_byte(ACK);
+					uart_write_byte(&huart_p1, ACK);
 					result = COM_ABORT;
 					break;
 				case 0:
 					/* End of transmission */
-					uart_write_byte(ACK);
+					uart_write_byte(&huart_p1, ACK);
 					file_done = 1;
 					break;
 				default:
 					/* Normal packet */
 					if (aPacketData[PACKET_NUMBER_INDEX] != (0xFFU & packets_received)) {
-						uart_write_byte(NAK);
+						uart_write_byte(&huart_p1, NAK);
 					} else {
 						if (packets_received == 0) {
 							/* File name packet */
@@ -220,17 +220,17 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 								/* Image size is greater than Flash size */
 								if (*p_size > FLASH_BANK_SIZE) {
 									/* End session */
-									uart_write_byte(CA);
-									uart_write_byte(CA);
+									uart_write_byte(&huart_p1, CA);
+									uart_write_byte(&huart_p1, CA);
 									result = COM_LIMIT;
 								}
 								/* erase user application area */
 								FLASH_BankErase(bank);
 								*p_size = filesize;
-								uart_write_byte(ACK);
-								uart_write_byte(CRC16);
+								uart_write_byte(&huart_p1, ACK);
+								uart_write_byte(&huart_p1, CRC16);
 							} else { /* File header packet is empty, end session */
-								uart_write_byte(ACK);
+								uart_write_byte(&huart_p1, ACK);
 								file_done = 1;
 								session_done = 1;
 								break;
@@ -240,11 +240,11 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 							/* Write received data in Flash */
 							if (FLASH_Write(flashdestination, (uint32_t*) ramsource, packet_length) == FLASHIF_OK) {
 								flashdestination += packet_length;
-								uart_write_byte(ACK);
+								uart_write_byte(&huart_p1, ACK);
 							} else { /* An error occurred while writing to Flash memory */
 								/* End session */
-								uart_write_byte(CA);
-								uart_write_byte(CA);
+								uart_write_byte(&huart_p1, CA);
+								uart_write_byte(&huart_p1, CA);
 								result = COM_DATA;
 							}
 						}
@@ -255,8 +255,8 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 				}
 				break;
 				case HAL_BUSY: /* Abort actually */
-					uart_write_byte(CA);
-					uart_write_byte(CA);
+					uart_write_byte(&huart_p1, CA);
+					uart_write_byte(&huart_p1, CA);
 					result = COM_ABORT;
 					break;
 				default:
@@ -265,10 +265,10 @@ COM_StatusTypeDef Ymodem_Receive (uint32_t *p_size, uint32_t bank) {
 					}
 					if (errors > MAX_ERRORS) {
 						/* Abort communication */
-						uart_write_byte(CA);
-						uart_write_byte(CA);
+						uart_write_byte(&huart_p1, CA);
+						uart_write_byte(&huart_p1, CA);
 					} else {
-						uart_write_byte(CRC16); /* Ask for a packet */
+						uart_write_byte(&huart_p1, CRC16); /* Ask for a packet */
 					}
 					break;
 			}

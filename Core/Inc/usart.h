@@ -27,6 +27,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdbool.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -35,14 +36,30 @@ extern "C" {
 extern UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN Private defines */
+#define ARRAY_LEN(x)        (sizeof(x) / sizeof((x)[0]))
+#define UART1_BUFFER_SIZE 	2048
+
+typedef struct {
+	UART_HandleTypeDef* p_huart;
+	DMA_TypeDef *p_hdma;
+	uint32_t rx_channel;
+	uint8_t* p_rxBuf;
+	size_t rxBufSize;
+	size_t rxPos;
+} huart_port_t;
+
+extern huart_port_t huart_p1;
 
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void uart_write_byte(uint8_t byte);
-void uart_write_string(void *p_buffer, uint16_t size);
+void uart_write_byte(huart_port_t* huart, uint8_t byte);
+void uart_write_string(huart_port_t* huart, void *p_buffer, uint16_t size);
+bool uart_read_byte(huart_port_t* huart, void *byte);
+bool uart_read_string(huart_port_t* huart, void *p_dest, size_t len);
+bool uart_read_loop(huart_port_t* huart, void *p_dest, size_t len, uint32_t timeout);
 
 /* USER CODE END Prototypes */
 
